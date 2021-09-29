@@ -1,0 +1,4 @@
+# By-products of linux build,
+*.o
+*.d
+
