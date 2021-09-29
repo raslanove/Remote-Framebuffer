@@ -1,3 +1,10 @@
+/* 
+ * File:   main.c
+ * Author: raslanove
+ *
+ * Created on September 29, 2021
+ */
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xos.h>

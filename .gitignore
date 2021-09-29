@@ -1,3 +1,7 @@
+# Netbeans artifacts,
+/build
+/target
+
 # By-products of linux build,
 *.o
 *.d
