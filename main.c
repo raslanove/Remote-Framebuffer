@@ -21,13 +21,15 @@
 #define WINDOW_WIDTH 1600
 #define WINDOW_HEIGHT 900
 
+#define XVFB_OVERHEAD_BYTES 3232
+
 static struct {
     Display *display;
     int screen;
     Window window;
     GC graphicsContext;
     XImage backBufferImage;
-    int32_t backBufferImageData[WINDOW_WIDTH*WINDOW_HEIGHT];
+    int32_t backBufferImageData[(XVFB_OVERHEAD_BYTES/4) + (WINDOW_WIDTH*WINDOW_HEIGHT)];
 } X11;
 
 static const char *EVENT_NAME[] = {"Reserved", "Reserved", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify", "EnterNotify", "LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose", "GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify", "DestroyNotify", "UnmapNotify", "MapNotify", "MapRequest", "ReparentNotify", "ConfigureNotify", "ConfigureRequest", "GravityNotify", "ResizeRequest", "CirculateNotify", "CirculateRequest", "PropertyNotify", "SelectionClear", "SelectionRequest", "SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify", "GenericEvent", "LASTEvent"};
@@ -65,7 +67,7 @@ static void startX11() {
     X11.backBufferImage.height = WINDOW_HEIGHT;
     X11.backBufferImage.xoffset = 0;
     X11.backBufferImage.format = ZPixmap;
-    X11.backBufferImage.data = (char *) X11.backBufferImageData;
+    X11.backBufferImage.data = (char *) &X11.backBufferImageData[XVFB_OVERHEAD_BYTES/4];
     X11.backBufferImage.byte_order = LSBFirst;
     X11.backBufferImage.bitmap_unit = 8;        // Row bit alignment. See: https://www.x.org/releases/X11R7.5/doc/man/man3/XPutPixel.3.html
     X11.backBufferImage.bitmap_bit_order = LSBFirst;
@@ -128,11 +130,8 @@ int main() {
 
     struct pollfd pollFileDescriptor; 
     int32_t imageBytesReceived=0;
-    int32_t imageTargetBytesCount= WINDOW_WIDTH*WINDOW_HEIGHT*4;
+    int32_t imageTargetBytesCount = (WINDOW_WIDTH*WINDOW_HEIGHT*4) + XVFB_OVERHEAD_BYTES;
     
-    // Needed: 5760000
-    // Actual: 5763232
-            
     XEvent event;
     KeySym key;
     char text[256];
@@ -181,7 +180,7 @@ int main() {
                 
                 // Sleep more next time, with a cap,
                 sleepPeriod *= 2;
-                if (sleepPeriod>1000) sleepPeriod = 1000;
+                if (sleepPeriod>10000) sleepPeriod = 10000;
             }
             continue;
         }
@@ -199,8 +198,6 @@ int main() {
         // Handle key presses,
         if (event.type==KeyPress && XLookupString(&event.xkey, text, 255, &key, 0) == 1) {
             if (text[0]=='q') {
-                
-                printf("Sleep period: %d\n", sleepPeriod);
                 closeX11();
                 break;
             }
