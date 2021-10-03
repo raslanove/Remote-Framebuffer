@@ -40,32 +40,42 @@ static void check(int condition, const char * message, ...) {
     }
 }
 
-int main(int argc, char* argv[]) {
-    
+struct FileMemoryMapping {
+    const char* memory;
+    size_t size;
+};
+
+static struct FileMemoryMapping mapFileToMemory(const char* fileName) {
+
     int fileDescriptor;
     struct stat fileStat;
-    size_t fileSize;
+    struct FileMemoryMapping mapping;
 
-    // Make sure we have a filename argument,
-    check(argc < 2, "Usage: ./capture.o <filename>\n");
-    
-    const char *file_name = argv[1];
-    const char *mappedMemory;
-    
     // Get file descriptor,
-    fileDescriptor = open(file_name, O_RDONLY);
-    check(fileDescriptor < 0, "open %s failed: %s", file_name, strerror(errno));
+    fileDescriptor = open(fileName, O_RDONLY);
+    check(fileDescriptor < 0, "open %s failed: %s", fileName, strerror(errno));
 
     // Get the size of the file,
-    check(fstat(fileDescriptor, &fileStat) < 0, "stat %s failed: %s", file_name, strerror(errno));
-    fileSize = fileStat.st_size;
+    check(fstat(fileDescriptor, &fileStat) < 0, "stat %s failed: %s", fileName, strerror(errno));
+    mapping.size = fileStat.st_size;
 
     // Memory-map the file,
-    mappedMemory = mmap(0, fileSize, PROT_READ, MAP_PRIVATE, fileDescriptor, 0);
-    check(mappedMemory == MAP_FAILED, "mmap %s failed: %s", file_name, strerror(errno));
+    mapping.memory = mmap(0, mapping.size, PROT_READ, MAP_PRIVATE, fileDescriptor, 0);
+    check(mapping.memory == MAP_FAILED, "mmap %s failed: %s", fileName, strerror(errno));
+    
+    return mapping;    
+}
 
+int main(int argc, char* argv[]) {
+    
+    // Make sure we have a sufficient arguments,
+    check(argc < 2, "Usage: ./capture.o <filename>\n");
+
+    // Map file to memory,
+    struct FileMemoryMapping mapping = mapFileToMemory(argv[1]);
+        
     // Output the file to the stdout,
-    write(1 /*stdout*/, mappedMemory, fileSize);
+    write(1 /*stdout*/, mapping.memory, mapping.size);
 
     return 0;
 }

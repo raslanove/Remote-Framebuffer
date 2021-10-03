@@ -2,6 +2,7 @@
 /build
 /target
 /dist
+nbproject/private/private.xml
 
 # By-products of linux build,
 *.o
