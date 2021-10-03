@@ -158,7 +158,7 @@ int main() {
             if (pollFileDescriptor.revents & POLLIN) {
 
                 // We've received some data,
-                readBytesCount = read(0, &((char *) X11.backBufferImageData)[imageBytesReceived], imageTargetBytesCount-imageBytesReceived);                
+                readBytesCount = read(0 /*stdin*/, &((char *) X11.backBufferImageData)[imageBytesReceived], imageTargetBytesCount-imageBytesReceived);                
                 imageBytesReceived += readBytesCount;
                 if (imageBytesReceived == imageTargetBytesCount) {
                     draw();
