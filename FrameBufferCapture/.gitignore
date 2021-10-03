@@ -1,0 +1,11 @@
+# Netbeans artifacts,
+/build
+/target
+/dist
+
+# By-products of linux build,
+*.o
+*.d
+
+# Test raw images,
+*.raw
