@@ -16,7 +16,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <poll.h>
-#include <time.h>
 
 #define WINDOW_WIDTH 1600
 #define WINDOW_HEIGHT 900
@@ -117,15 +116,6 @@ static void draw() {
     XPutImage(X11.display, X11.window, X11.graphicsContext, &X11.backBufferImage, 0, 0, 0, 0, X11.backBufferImage.width, X11.backBufferImage.height);
 }
 
-static double timeMillisSince(struct timespec* startTime) {    
-    struct timespec currentTime;
-    clock_gettime(CLOCK_REALTIME, &currentTime);
-    double timeNanos = 
-        (currentTime.tv_sec  - startTime->tv_sec )*1E9 +
-        (currentTime.tv_nsec - startTime->tv_nsec);
-    return timeNanos / 1E6;
-}
-
 int main() {
 
     struct pollfd pollFileDescriptor; 
@@ -146,29 +136,24 @@ int main() {
     pollFileDescriptor.events = POLLIN;
     
     startX11();
-    int32_t exposed=0;
     int32_t sleepPeriod=1;
-    struct timespec startTime;
     while (1) {
 
+        // Check if something is ready on the input stream,
         int32_t readBytesCount=0;
-        if (exposed) {
-            // Check if something is ready on the input stream,            
-            poll(&pollFileDescriptor, 1 /*one descriptor provided*/, 0 /*return immediately without timeout*/);
-            if (pollFileDescriptor.revents & POLLIN) {
+        poll(&pollFileDescriptor, 1 /*one descriptor provided*/, 0 /*return immediately without timeout*/);
+        if (pollFileDescriptor.revents & POLLIN) {
 
-                // We've received some data,
-                readBytesCount = read(0 /*stdin*/, &((char *) X11.backBufferImageData)[imageBytesReceived], imageTargetBytesCount-imageBytesReceived);                
-                imageBytesReceived += readBytesCount;
-                if (imageBytesReceived == imageTargetBytesCount) {
-                    draw();
-                    imageBytesReceived = 0;
-                    printf("Reading took: %f\n", timeMillisSince(&startTime));
-                }
-                
-                // Expecting more input, so don't sleep too much,
-                sleepPeriod = 1;
+            // We've received some data,
+            readBytesCount = read(0 /*stdin*/, &((char *) X11.backBufferImageData)[imageBytesReceived], imageTargetBytesCount-imageBytesReceived);                
+            imageBytesReceived += readBytesCount;
+            if (imageBytesReceived == imageTargetBytesCount) {
+                draw();
+                imageBytesReceived = 0;
             }
+
+            // Expecting more input, so don't sleep too much,
+            sleepPeriod = 1;
         }
         
         // If no events to handle, sleep,
@@ -188,13 +173,7 @@ int main() {
         // Blocking function call,
         XNextEvent(X11.display, &event);
         printf("Received event: %s\n", EVENT_NAME[event.type]);
-        
-        // Expose is received on resize (not sure if this is the only case),
-        if (event.type==Expose && event.xexpose.count==0) {
-            exposed = 1;
-            clock_gettime(CLOCK_REALTIME, &startTime);
-        }
-        
+       
         // Handle key presses,
         if (event.type==KeyPress && XLookupString(&event.xkey, text, 255, &key, 0) == 1) {
             if (text[0]=='q') {

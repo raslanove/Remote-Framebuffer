@@ -25,6 +25,9 @@
 // For write(),
 #include <unistd.h>
 
+// For frame timing,
+#include <time.h>
+
 // For exit(),
 #include <stdlib.h>
 
@@ -66,16 +69,55 @@ static struct FileMemoryMapping mapFileToMemory(const char* fileName) {
     return mapping;    
 }
 
+static double timeMillisSince(struct timespec* startTime) {
+    struct timespec currentTime;
+    clock_gettime(CLOCK_REALTIME, &currentTime);
+    double timeNanos = 
+        (currentTime.tv_sec  - startTime->tv_sec )*1E9 +
+        (currentTime.tv_nsec - startTime->tv_nsec);
+    return timeNanos / 1E6;
+}
+
+static void addToTime(struct timespec* outTime, double timeToAddMillis) {
+    outTime->tv_nsec += timeToAddMillis * 1E6;
+    if (outTime->tv_nsec >= 1E9) {
+        outTime->tv_sec++;
+        outTime->tv_nsec -= 1E9;
+    }
+}
+
+static void captureAndOutputFrames(struct FileMemoryMapping mappedFrameBuffer, int32_t rate) {
+    
+    double frameDurationMillis = 1000.0 / rate;
+    struct timespec frameStartTime;
+        
+    clock_gettime(CLOCK_REALTIME, &frameStartTime);    
+    while (1) {
+        
+        // Write the frame,        
+        write(1 /*stdout*/, mappedFrameBuffer.memory, mappedFrameBuffer.size);
+        
+        // Sleep till the end of the frame,
+        double elapsedTimeMillis = timeMillisSince(&frameStartTime);
+        if (elapsedTimeMillis < frameDurationMillis) usleep((unsigned int) (1000 * (frameDurationMillis - elapsedTimeMillis)));
+        
+        // Update next frame start time,
+        addToTime(&frameStartTime, frameDurationMillis);
+    }
+}
+
 int main(int argc, char* argv[]) {
     
     // Make sure we have a sufficient arguments,
-    check(argc < 2, "Usage: ./capture.o <filename>\n");
+    int rate;
+    check(argc < 3, "Usage: ./capture.o <filename> <frame rate>\n");
+    sscanf (argv[2], "%d", &rate);
 
     // Map file to memory,
-    struct FileMemoryMapping mapping = mapFileToMemory(argv[1]);
+    struct FileMemoryMapping mappedFrameBuffer = mapFileToMemory(argv[1]);
         
     // Output the file to the stdout,
-    write(1 /*stdout*/, mapping.memory, mapping.size);
+    captureAndOutputFrames(mappedFrameBuffer, rate);
 
     return 0;
 }
