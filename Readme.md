@@ -1,5 +1,5 @@
-# Remote FrameBuffer
-I have a machine with two monitors attached to a single display adapter running Ubuntu 20.04. I attached two keyboards and two mice, then started to look for solutions on how to effectively allow two users to use this machine at the same time.
+# Remote Framebuffer
+I have a machine running Ubuntu 20.04 with two monitors attached to a single display adapter. I attached two keyboards and two mice, then started to look for solutions on how to effectively allow two users to use this machine at the same time.
 
 We have mutiple options:
 - ### Virtualbox
@@ -13,7 +13,7 @@ We have mutiple options:
 I have also come across [this](https://www.collabora.com/news-and-blog/blog/2019/04/01/running-android-next-to-wayland/), but didn't investigate it long enough.
 
 - ### Xvfb
-	Xvfb if an **X11 server** that just works! It provides a virtual frame-buffers to replace the need for an actual display adapters. These virtual displays can also have their separate input mechanisms. You can run as many instances as you need, and they don't interfere with your system's actual X11/Wayland server. Thankfully, on Ubuntu 20.04 we have mature **Mesa** drivers that have **llvmpipe** based software rendering supporting OpenGL 4.5, so these virtual displays will still be able to run graphics intensive applications/games, albeit on the CPU not the GPU. 
+	Xvfb if an **X11 server** that just works! It provides virtual frame-buffers to replace the need for actual display adapters. These virtual displays can also have their separate input mechanisms. You can run as many instances as you need, and they don't interfere with your system's actual X11/Wayland server. Thankfully, on Ubuntu 20.04 we have mature **Mesa** drivers that have **llvmpipe** based software rendering supporting OpenGL 4.5, so these virtual displays will still be able to run graphics intensive applications/games, albeit on the CPU not the GPU. 
 
 	The problem is, they are virtual! You need a way to transfer the contents of the virtual frame-buffer to the real graphics adapter, so you can have your separate X11 systems, and a way to dedicate a mouse and a keyboard to each one. This is what we did here.
 	
